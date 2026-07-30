@@ -46,12 +46,6 @@ Arch:
 sudo pacman -S nasm gcc qemu-system-x86 --needed
 ```
 
-macOS (cross-compiling is recommended since Apple's toolchain
-doesn't target bare-metal x86 well):
-
-```bash
-brew install nasm qemu i686-elf-gcc i686-elf-binutils
-```
 If you use the `i686-elf-*` toolchain, update `CC`/`LD` at the top
 of the `Makefile` accordingly and drop the `-m32` flag (that
 toolchain is already 32-bit-only by default).
