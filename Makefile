@@ -24,19 +24,56 @@ $(BUILD)/boot.bin: boot/boot.asm
 	mkdir -p $(BUILD)
 	$(ASM) -f bin $< -o $@
 
-# ---- Kernel entry stub (assembled to ELF object for linking with C) ----
+# ---- Kernel ASM entry ----
 $(BUILD)/kernel_entry.o: kernel/kernel_entry.asm
 	mkdir -p $(BUILD)
 	$(ASM) -f elf32 $< -o $@
 
-# ---- Kernel C code ----
+# ---- Interrupt ASM ----
+$(BUILD)/interrupts.o: kernel/interrupts.asm
+	mkdir -p $(BUILD)
+	$(ASM) -f elf32 $< -o $@
+
+
+# ---- Kernel C files ----
 $(BUILD)/kernel.o: kernel/kernel.c
 	mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $< -o $@
 
+$(BUILD)/idt.o: kernel/idt.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD)/io.o: kernel/io.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD)/pic.o: kernel/pic.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD)/keyboard.o: kernel/keyboard.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
 # ---- Link kernel entry + kernel.c into one flat binary ----
-$(BUILD)/kernel.bin: $(BUILD)/kernel_entry.o $(BUILD)/kernel.o
-	$(LD) $(LDFLAGS) -o $@ $(BUILD)/kernel_entry.o $(BUILD)/kernel.o
+$(BUILD)/kernel.bin: \
+	$(BUILD)/kernel_entry.o \
+	$(BUILD)/interrupts.o \
+	$(BUILD)/kernel.o \
+	$(BUILD)/idt.o \
+	$(BUILD)/io.o \
+	$(BUILD)/pic.o \
+	$(BUILD)/keyboard.o
+
+	$(LD) $(LDFLAGS) -o $@ \
+	$(BUILD)/kernel_entry.o \
+	$(BUILD)/interrupts.o \
+	$(BUILD)/kernel.o \
+	$(BUILD)/idt.o \
+	$(BUILD)/io.o \
+	$(BUILD)/pic.o \
+	$(BUILD)/keyboard.o
 
 # ---- Combine bootloader + kernel into a single disk image ----
 $(BUILD)/rinkos.img: $(BUILD)/boot.bin $(BUILD)/kernel.bin

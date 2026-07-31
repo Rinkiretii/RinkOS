@@ -20,6 +20,9 @@ static uint16_t *const vga_buffer = (uint16_t *) VGA_ADDRESS;
 static int cursor_row = 0;
 static int cursor_col = 0;
 
+extern void idt_init();
+extern void pic_remap();
+
 static void vga_clear(void)
 {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
@@ -65,7 +68,7 @@ static void vga_putchar(char c)
     vga_scroll_if_needed();
 }
 
-static void kprint(const char *str)
+void kprint(const char *str)
 {
     for (int i = 0; str[i] != '\0'; i++) {
         vga_putchar(str[i]);
@@ -75,15 +78,23 @@ static void kprint(const char *str)
 /* Entry point called from kernel_entry.asm */
 void kernel_main(void)
 {
+
     vga_clear();
     kprint("RinkOS kernel loaded successfully.\n");
     kprint("Welcome to RinkOS!\n");
     kprint("--------------------------------\n");
     kprint("Kernel is running in 32-bit protected mode.\n");
 
-    /* Nothing to schedule yet, so just halt the CPU forever.
-     * hlt puts the CPU to sleep until the next interrupt. */
-    for (;;) {
-        __asm__ __volatile__("hlt");
+    idt_init();
+    pic_remap();
+
+    asm volatile("sti"); /* enable interrupts */
+
+    while(1) {
+      /* code */
     }
+    
 }
+
+
+// eblan ne zabudi kartohu v holodilnik postavit Rinkir

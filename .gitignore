@@ -1,6 +1,2 @@
 build/
 .vscode/
-.~lock.qemu_debug.log#
-int_trace.log
-pre_fault.log
-qemu_debug.log
