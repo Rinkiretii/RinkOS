@@ -10,8 +10,14 @@ rinkos/
 ├── boot/
 │   └── boot.asm          # Stage-1 bootloader (16-bit real mode -> 32-bit protected mode)
 ├── kernel/
+|   ├──scr/
+|   └── io.h 
 │   ├── kernel_entry.asm  # Tiny asm stub that calls kernel_main()
 │   ├── kernel.c          # The actual kernel (VGA text output for now)
+|   ├── interrupts.asm
+|   ├── irq.c
+|   ├── keyboard.c
+|   ├── pic.c
 │   └── linker.ld         # Places the kernel at the address boot.asm jumps to
 ├── Makefile
 └── README.md
