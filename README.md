@@ -16,6 +16,7 @@ rinkos/
 │   ├── kernel.c          # The actual kernel (VGA text output for now)
 |   ├── interrupts.asm
 |   ├── irq.c
+|   ├── idt.c
 |   ├── keyboard.c
 |   ├── pic.c
 │   └── linker.ld         # Places the kernel at the address boot.asm jumps to
