@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include "scr/keyboard.h"
 #include "scr/io.h"
+#include "scr/mm.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -26,6 +27,9 @@ static int cursor_col = 0;
 extern void idt_init();
 extern void pic_remap();
 extern void keyboard_debug_init(void);
+extern void keyboard_handler(void);
+extern void kmalloc_init();
+extern void kfree();
 
 static void vga_update_cursor(void)
 {
@@ -102,6 +106,8 @@ void kprint(const char *str)
 void kernel_main(void)
 {
     vga_clear();
+    kmalloc_init(); 
+
     kprint("RinkOS kernel loaded successfully.\n");
     kprint("Welcome to RinkOS!\n");
     kprint("--------------------------------\n");
