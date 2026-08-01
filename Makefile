@@ -95,6 +95,9 @@ $(BUILD)/rinkos.img: $(BUILD)/boot.bin $(BUILD)/kernel.bin
 run: $(BUILD)/rinkos.img
 	qemu-system-i386 -fda $(BUILD)/rinkos.img
 
+debug: $(BUILD)/rinkos.img
+	qemu-system-i386 -d in_asm,int -D log.txt -fda $(BUILD)/rinkos.img
+
 clean:
 	rm -rf $(BUILD)
 

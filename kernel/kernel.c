@@ -7,6 +7,8 @@
  * ============================================================ */
 
 #include <stdint.h>
+#include "scr/keyboard.h"
+#include "scr/io.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -17,11 +19,13 @@
 #define VGA_COLOR     0x0F   /* white text on black background */
 
 static uint16_t *const vga_buffer = (uint16_t *) VGA_ADDRESS;
+extern uint8_t inb(uint16_t port);
 static int cursor_row = 0;
 static int cursor_col = 0;
 
 extern void idt_init();
 extern void pic_remap();
+extern void keyboard_debug_init(void);
 
 static void vga_clear(void)
 {
@@ -51,7 +55,7 @@ static void vga_scroll_if_needed(void)
     cursor_row = VGA_HEIGHT - 1;
 }
 
-static void vga_putchar(char c)
+void vga_putchar(char c)
 {
     if (c == '\n') {
         cursor_col = 0;
@@ -78,23 +82,22 @@ void kprint(const char *str)
 /* Entry point called from kernel_entry.asm */
 void kernel_main(void)
 {
-
     vga_clear();
     kprint("RinkOS kernel loaded successfully.\n");
     kprint("Welcome to RinkOS!\n");
     kprint("--------------------------------\n");
     kprint("Kernel is running in 32-bit protected mode.\n");
+    kprint("\n");
 
     idt_init();
     pic_remap();
+    keyboard_debug_init();
 
-    asm volatile("sti"); /* enable interrupts */
+    asm volatile("sti");
 
-    while(1) {
-      /* code */
+    while (1) {
+        char c = keyboard_getchar();
+        char str[2] = {c, '\0'};
+        kprint(str);
     }
-    
 }
-
-
-// eblan ne zabudi kartohu v holodilnik postavit Rinkir

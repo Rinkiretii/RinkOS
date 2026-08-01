@@ -7,8 +7,17 @@
 BITS 32
 
 [extern kernel_main]           ; defined in kernel.c
+[extern _bss_start]
+[extern _bss_end]
 
 global _start 
 _start:
+    ; zero .bss
+    mov edi, _bss_start
+    mov ecx, _bss_end
+    sub ecx, edi
+    xor eax, eax
+    rep stosb
+
     call kernel_main
     jmp $                       ; halt forever if kernel_main ever returns

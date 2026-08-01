@@ -1,6 +1,5 @@
 #include "scr/io.h"
 
-
 void pic_remap()
 {
     // ICW1

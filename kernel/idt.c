@@ -27,22 +27,15 @@ struct idt_entry idt[256];
 struct idt_ptr idtp;
 
 
-
-static void idt_set_gate(
-    uint8_t num,
-    uint32_t base
-)
-{
+static void idt_set_gate(uint8_t num, uint32_t base, uint8_t present) {
     idt[num].base_low = base & 0xFFFF;
     idt[num].base_high = (base >> 16) & 0xFFFF;
 
     idt[num].selector = 0x08;
     idt[num].always0 = 0;
 
-    idt[num].flags = 0x8E;
+    idt[num].flags = (present << 7) | 0x8E; // Set the present bit based on the parameter
 }
-
-
 
 void idt_init()
 {
@@ -53,16 +46,11 @@ void idt_init()
 
     for(int i=0;i<256;i++)
     {
-        idt_set_gate(i,0);
+        idt_set_gate(i, 0, 0);
     }
 
 
-    idt_set_gate(33,(uint32_t)keyboard_stub);
+    idt_set_gate(33,(uint32_t)keyboard_stub, 1);
 
-
-    asm volatile(
-        "lidt %0"
-        :
-        :"m"(idtp)
-    );
+    asm volatile("lidt %0" : : "m"(idtp));
 }
