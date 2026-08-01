@@ -27,6 +27,15 @@ extern void idt_init();
 extern void pic_remap();
 extern void keyboard_debug_init(void);
 
+static void vga_update_cursor(void)
+{
+    uint16_t pos = cursor_row * VGA_WIDTH + cursor_col;
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, (uint8_t)(pos & 0xFF));
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
+}
+
 static void vga_clear(void)
 {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
@@ -60,6 +69,15 @@ void vga_putchar(char c)
     if (c == '\n') {
         cursor_col = 0;
         cursor_row++;
+    } else if (c == '\b') {
+        if (cursor_col > 0) {
+            cursor_col--;
+        } else if (cursor_row > 0) {
+            cursor_row--;
+            cursor_col = VGA_WIDTH - 1;
+        }
+        const int index = cursor_row * VGA_WIDTH + cursor_col;
+        vga_buffer[index] = (uint16_t)(' ' | (VGA_COLOR << 8));
     } else {
         const int index = cursor_row * VGA_WIDTH + cursor_col;
         vga_buffer[index] = (uint16_t)((uint8_t)c | (VGA_COLOR << 8));
@@ -70,7 +88,8 @@ void vga_putchar(char c)
         }
     }
     vga_scroll_if_needed();
-}
+    vga_update_cursor();
+} 
 
 void kprint(const char *str)
 {
@@ -88,13 +107,12 @@ void kernel_main(void)
     kprint("--------------------------------\n");
     kprint("Kernel is running in 32-bit protected mode.\n");
     kprint("\n");
-
+    
     idt_init();
     pic_remap();
-    keyboard_debug_init();
 
     asm volatile("sti");
-
+    
     while (1) {
         char c = keyboard_getchar();
         char str[2] = {c, '\0'};
