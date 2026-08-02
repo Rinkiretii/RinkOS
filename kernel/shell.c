@@ -6,6 +6,9 @@
 extern void kprint(const char *);
 extern void vga_clear(void);
 extern void vga_enable_cursor(void);
+extern void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes);
+extern void reboot(void);
+
 
 #define LINE_BUF_SIZE 128
 
@@ -18,6 +21,23 @@ static int str_eq(const char *a, const char *b)
     return *a == *b;
 }
 
+static void kprint_uint(uint32_t val)
+{
+    char buf[11];
+    int i = 10;
+    buf[i--] = '\0';
+
+    if (val == 0) {
+        buf[i--] = '0';
+    } else {
+        while (val > 0) {
+            buf[i--] = '0' + (val % 10);
+            val /= 10;
+        }
+    }
+    kprint(&buf[i + 1]);
+}
+
 static void cmd_help(void)
 {
     kprint("Available commands:\n");
@@ -25,6 +45,8 @@ static void cmd_help(void)
     kprint("  clear   - clear the screen\n");
     kprint("  echo    - print text back, e.g. echo hello\n");
     kprint("  info    - OS and system information\n");
+    kprint("  meminfo - show heap usage\n");
+    kprint("  reboot  - restart\n");
 }
 
 static void cmd_echo(const char *args)
@@ -35,9 +57,27 @@ static void cmd_echo(const char *args)
     kprint("\n");
 }
 
+static void cmd_meminfo(void)
+{
+    size_t total, used, free_bytes;
+    kmalloc_stats(&total, &used, &free_bytes);
+
+    kprint("Heap total: ");
+    kprint_uint((uint32_t)total);
+    kprint(" bytes\n");
+
+    kprint("Heap used:  ");
+    kprint_uint((uint32_t)used);
+    kprint(" bytes\n");
+
+    kprint("Heap free:  ");
+    kprint_uint((uint32_t)free_bytes);
+    kprint(" bytes\n");
+}
+
 static void cmd_info(void)
 {
-    kprint("RinkOS 0.06\n");
+    kprint("RinkOS 0.07\n");
 }
 
 static void run_command(char *line)
@@ -56,7 +96,11 @@ static void run_command(char *line)
         cmd_echo(line + 4);
     } else if (str_eq(line, "info")) {
         cmd_info();
-    } else {
+    } else if (str_eq(line, "meminfo")) {
+        cmd_meminfo();
+    } else if (str_eq(line, "reboot")) 
+        reboot();
+    else {
         kprint(line);
         kprint(": command not found\n");
     }

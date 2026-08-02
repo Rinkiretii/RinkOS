@@ -113,6 +113,18 @@ void vga_enable_cursor(void)
     outb(0x3D5, 0x0F);
 }
 
+void reboot(void)
+{
+    uint8_t good = 0x02;
+    while (good & 0x02) {
+        good = inb(0x64);
+    }
+    outb(0x64, 0xFE);   /* pulse the CPU reset line */
+
+    /* if that didn't work, halt rather than run off into nothing */
+    asm volatile("cli; hlt");
+}
+
 /*
 void kprint_hex32(uint32_t val)
 {

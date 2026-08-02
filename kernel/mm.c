@@ -121,6 +121,27 @@ void kfree(void *ptr)
     block->free = 1;
     coalesce();
 }
+
+void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes)
+{
+    size_t t = 0, u = 0, f = 0;
+    block_header_t *curr = heap_start;
+
+    while (curr) {
+        t += curr->size;
+        if (curr->free) {
+            f += curr->size;
+        } else {
+            u += curr->size;
+        }
+        curr = curr->next;
+    }
+
+    if (total) *total = t;
+    if (used) *used = u;
+    if (free_bytes) *free_bytes = f;
+}
+
 /*
 void mmap_dump(void)
 {
