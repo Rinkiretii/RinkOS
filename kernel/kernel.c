@@ -11,6 +11,7 @@
 #include "scr/io.h"
 #include "scr/mm.h"
 #include "scr/mmap.h"
+#include "scr/shell.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -32,8 +33,9 @@ extern void keyboard_handler(void);
 extern void kmalloc_init();
 extern void kfree();
 extern void mmap_dump();
+extern void shell_run(void);
 
-static void vga_update_cursor(void)
+void vga_update_cursor(void)
 {
     uint16_t pos = cursor_row * VGA_WIDTH + cursor_col;
     outb(0x3D4, 0x0F);
@@ -41,8 +43,7 @@ static void vga_update_cursor(void)
     outb(0x3D4, 0x0E);
     outb(0x3D5, (uint8_t)((pos >> 8) & 0xFF));
 }
-
-static void vga_clear(void)
+void vga_clear(void)
 {
     for (int i = 0; i < VGA_WIDTH * VGA_HEIGHT; i++) {
         vga_buffer[i] = (uint16_t)(' ' | (VGA_COLOR << 8));
@@ -51,7 +52,7 @@ static void vga_clear(void)
     cursor_col = 0;
 }
 
-static void vga_scroll_if_needed(void)
+void vga_scroll_if_needed(void)
 {
     if (cursor_row < VGA_HEIGHT) {
         return;
@@ -103,6 +104,15 @@ void kprint(const char *str)
         vga_putchar(str[i]);
     }
 }
+
+void vga_enable_cursor(void)
+{
+    outb(0x3D4, 0x0A);
+    outb(0x3D5, 0x0D);
+    outb(0x3D4, 0x0B);
+    outb(0x3D5, 0x0F);
+}
+
 /*
 void kprint_hex32(uint32_t val)
 {
@@ -138,9 +148,5 @@ void kernel_main(void)
     kmalloc_init();
 //    mmap_dump();
     
-    while (1) {
-        char c = keyboard_getchar();
-        char str[2] = {c, '\0'};
-        kprint(str);
-    }
+    shell_run();
 }

@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "scr/mm.h"
+#include "scr/mmap.h"
 
 /* provided by linker.ld — marks the end of the kernel's .bss section */
 extern uint8_t _bss_end;
