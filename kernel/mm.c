@@ -4,9 +4,44 @@
 
 /* provided by linker.ld — marks the end of the kernel's .bss section */
 extern uint8_t _bss_end;
+extern void kprint(const char *);
+extern void kprint_hex32(uint32_t);
 
 #define HEAP_START ((uint32_t)&_bss_end)
 #define HEAP_END   0x80000u   /* stay well clear of the 0x90000 stack */
+
+static uint32_t find_heap_end(uint32_t heap_start)
+{
+    mmap_entry_t *entries = (mmap_entry_t *)MMAP_ADDR;
+    uint16_t count = MMAP_COUNT;
+
+    uint32_t best_end = heap_start + 0x10000; /* fallback: 64KB if map is empty */
+
+    for (uint16_t i = 0; i < count; i++) {
+        uint64_t base = entries[i].base;
+        uint64_t len  = entries[i].length;
+        uint32_t type = entries[i].type;
+
+        if (type != 1) continue;              /* skip non-usable regions */
+        if (base > 0xFFFFFFFFu) continue;      /* ignore >4GB regions, we're 32-bit */
+
+        uint32_t region_start = (uint32_t)base;
+        uint32_t region_end   = (uint32_t)(base + len);
+
+        if (region_start <= heap_start && region_end > heap_start) {
+            if (region_end > best_end) {
+                best_end = region_end;
+            }
+        }
+    }
+
+    /* stay safely below the 0x90000 stack regardless of what the map says */
+    if (best_end > 0x90000) {
+        best_end = 0x90000;
+    }
+
+    return best_end;
+}
 
 typedef struct block_header {
     size_t size;               /* usable size, not counting this header */
@@ -19,7 +54,9 @@ static block_header_t *heap_start = NULL;
 void kmalloc_init(void)
 {
     heap_start = (block_header_t *)HEAP_START;
-    heap_start->size = HEAP_END - HEAP_START - sizeof(block_header_t);
+    uint32_t heap_end = find_heap_end(HEAP_START);
+
+    heap_start->size = heap_end - HEAP_START - sizeof(block_header_t);
     heap_start->free = 1;
     heap_start->next = NULL;
 }
@@ -83,3 +120,24 @@ void kfree(void *ptr)
     block->free = 1;
     coalesce();
 }
+/*
+void mmap_dump(void)
+{
+    mmap_entry_t *entries = (mmap_entry_t *)MMAP_ADDR;
+    uint16_t count = MMAP_COUNT;
+
+    kprint("Memory map entries: ");
+    kprint_hex32(count);
+    kprint("\n");
+
+    for (uint16_t i = 0; i < count; i++) {
+        kprint("  base=");
+        kprint_hex32((uint32_t)entries[i].base);
+        kprint(" len=");
+        kprint_hex32((uint32_t)entries[i].length);
+        kprint(" type=");
+        kprint_hex32(entries[i].type);
+        kprint("\n");
+    }
+}
+*/

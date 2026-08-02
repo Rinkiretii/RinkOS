@@ -24,8 +24,9 @@ start:
     mov si, MSG_REAL_MODE
     call print_string
 
+    call detect_memory
     call load_kernel
-    call switch_to_pm         ; never returns
+    call switch_to_pm
 
     jmp $                     ; safety net, should never hit this
 
@@ -79,6 +80,49 @@ load_kernel:
     mov dh, 32                 ; number of sectors to read (adjust to kernel size)
     mov dl, [BOOT_DRIVE]
     call disk_load
+    ret
+
+; ------------------------------------------------------------
+; detect_memory: uses BIOS int 0x15, eax=0xE820 to build a
+; memory map. Stores entries at MEMORY_MAP_ADDR, and the entry
+; count at MEMORY_MAP_COUNT.
+; ------------------------------------------------------------
+MEMORY_MAP_ADDR   equ 0x9000    ; safely below 0x90000 stack, unused otherwise
+MEMORY_MAP_COUNT  equ 0x8FFC    ; 4 bytes just before the map, holds count
+
+detect_memory:
+    pusha
+
+    mov di, MEMORY_MAP_ADDR
+    xor ebx, ebx                ; continuation value, 0 to start
+    xor bp, bp                  ; entry counter
+
+    mov edx, 0x534D4150          ; "SMAP" magic
+.loop:
+    mov eax, 0xE820
+    mov ecx, 24                  ; ask for 24-byte entries
+    int 0x15
+    jc .done                     ; carry set = unsupported / done
+
+    cmp eax, 0x534D4150           ; BIOS should echo SMAP back in eax
+    jne .done
+
+    test ecx, ecx                 ; skip zero-length entries
+    je .skip
+
+    inc bp
+    add di, 24
+
+.skip:
+    test ebx, ebx                 ; ebx = 0 means this was the last entry
+    je .done
+
+    cmp bp, 64                    ; cap at 64 entries, plenty for now
+    jl .loop
+
+.done:
+    mov [MEMORY_MAP_COUNT], bp
+    popa
     ret
 
 ; ------------------------------------------------------------

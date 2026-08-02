@@ -10,6 +10,7 @@
 #include "scr/keyboard.h"
 #include "scr/io.h"
 #include "scr/mm.h"
+#include "scr/mmap.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -30,6 +31,7 @@ extern void keyboard_debug_init(void);
 extern void keyboard_handler(void);
 extern void kmalloc_init();
 extern void kfree();
+extern void mmap_dump();
 
 static void vga_update_cursor(void)
 {
@@ -101,6 +103,20 @@ void kprint(const char *str)
         vga_putchar(str[i]);
     }
 }
+/*
+void kprint_hex32(uint32_t val)
+{
+    char buf[11];
+    const char hex[] = "0123456789ABCDEF";
+
+    buf[0] = '0';
+    buf[1] = 'x';
+    for (int i = 0; i < 8; i++) {
+        buf[2 + i] = hex[(val >> ((7 - i) * 4)) & 0xF];
+    }
+    buf[10] = '\0';
+}
+*/
 
 /* Entry point called from kernel_entry.asm */
 void kernel_main(void)
@@ -118,6 +134,9 @@ void kernel_main(void)
     pic_remap();
 
     asm volatile("sti");
+
+    kmalloc_init();
+//    mmap_dump();
     
     while (1) {
         char c = keyboard_getchar();
