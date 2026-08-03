@@ -14,6 +14,7 @@
 #include "scr/shell.h"
 #include "scr/timer.h"
 #include "scr/task.h"
+#include "scr/shell.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -35,11 +36,11 @@ extern void keyboard_handler(void);
 extern void kmalloc_init();
 extern void kfree();
 extern void mmap_dump();
-extern void shell_run(void);
+extern void shell_run();
 extern void timer_init();
 extern void tasks_init();
 
-char *system_version = "RinkOS 0.011";
+char *system_version = "RinkOS 0.012";
 
 void vga_update_cursor(void)
 {
@@ -155,17 +156,18 @@ void kprint_hex32(uint32_t val)
     buf[10] = '\0';
 }
 
-void task_a(void) {
+void shell_task(void) {
+
     asm volatile("sti");
-    for (;;) {
-        kprint("A\n");
-    }
+    shell_run();
 }
 
-void task_b(void) {
+void background_task(void)
+{
     asm volatile("sti");
+    volatile uint32_t counter = 0;
     for (;;) {
-        kprint("B\n");
+        counter++;   /* just spins, proves it's actually scheduled without corrupting shell output */
     }
 }
 
@@ -184,15 +186,16 @@ void kernel_main(void)
     idt_init();
     pic_remap();
     tasks_init();
-    timer_init(100);
-    task_create(task_a);
-    task_create(task_b);
+    task_create(shell_task);
+    task_create(background_task);
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
+    
+    asm volatile("sti");  /* enable interrupts */
 
-    asm volatile("sti");
+    for (;;) {
+        asm volatile("hlt");
+    }
 
     kmalloc_init();
-    
-    shell_run();
 }

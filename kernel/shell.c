@@ -12,6 +12,7 @@ extern void reboot(void);
 extern void mmap_dump(void);
 extern uint32_t timer_get_seconds(void);
 extern char *system_version;
+extern uint32_t counter;
 
 
 #define LINE_BUF_SIZE 128
@@ -110,6 +111,13 @@ static void cmd_info(void)
     cmd_meminfo();
 }
 
+static void cmd_r(void)
+{
+    kprint("Counter: ");
+//    kprint_uint(counter);
+    kprint("\n");
+}
+
 static void run_command(char *line)
 {
     if (line[0] == '\0') {
@@ -136,6 +144,8 @@ static void run_command(char *line)
         cmd_uptime();
     } else if (str_eq(line, "debug")) {
         debug();
+    } else if (str_eq(line, "r")) {
+        cmd_r();
     } else {
         kprint("Unknown command: ");
         kprint(line);
