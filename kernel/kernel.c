@@ -167,7 +167,7 @@ void kernel_main(void)
     
     idt_init();
     pic_remap();
-    timer_init(100);  /* 100 Hz timer */
+    timer_init(100);
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
 

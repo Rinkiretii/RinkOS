@@ -88,7 +88,12 @@ static void cmd_meminfo(void)
 
 static void cmd_info(void)
 {
-    kprint("RinkOS 0.08\n");
+    kprint("RinkOS 0.09\n");
+    kprint("Uptime:");
+    kprint_uint(timer_get_seconds());
+    kprint(" seconds\n");
+    kprint("Heap usage:\n");
+    cmd_meminfo();
 }
 
 static void run_command(char *line)
