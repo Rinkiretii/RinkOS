@@ -2,7 +2,7 @@
 
 
 extern void keyboard_stub();
-
+extern void timer_stub();
 
 struct idt_entry
 {
@@ -51,6 +51,7 @@ void idt_init()
 
 
     idt_set_gate(33,(uint32_t)keyboard_stub, 1);
+    idt_set_gate(32, (uint32_t)timer_stub, 1);
 
     asm volatile("lidt %0" : : "m"(idtp));
 }

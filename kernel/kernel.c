@@ -12,6 +12,7 @@
 #include "scr/mm.h"
 #include "scr/mmap.h"
 #include "scr/shell.h"
+#include "scr/timer.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -34,6 +35,7 @@ extern void kmalloc_init();
 extern void kfree();
 extern void mmap_dump();
 extern void shell_run(void);
+extern void timer_init();
 
 void vga_update_cursor(void)
 {
@@ -115,14 +117,25 @@ void vga_enable_cursor(void)
 
 void reboot(void)
 {
+    asm volatile("cli");
+
+    /* try the keyboard controller pulse first */
     uint8_t good = 0x02;
     while (good & 0x02) {
         good = inb(0x64);
     }
-    outb(0x64, 0xFE);   /* pulse the CPU reset line */
+    outb(0x64, 0xFE);
 
-    /* if that didn't work, halt rather than run off into nothing */
-    asm volatile("cli; hlt");
+    /* fallback: force a triple fault (hard reset) if that didn't work */
+    struct {
+        uint16_t limit;
+        uint32_t base;
+    } __attribute__((packed)) bad_idt = {0, 0};
+
+    asm volatile("lidt %0" : : "m"(bad_idt));
+    asm volatile("int $0x03");  /* deliberately trigger an unhandled exception */
+
+    asm volatile("hlt");
 }
 
 /*
@@ -154,6 +167,9 @@ void kernel_main(void)
     
     idt_init();
     pic_remap();
+    timer_init(100);  /* 100 Hz timer */
+
+    while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
 
     asm volatile("sti");
 

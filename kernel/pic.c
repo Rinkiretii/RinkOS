@@ -23,6 +23,6 @@ void pic_remap()
 
 
     // enable IRQs
-    outb(0x21,0xFD);
+    outb(0x21,0xFC);
     outb(0xA1,0xFF);
 }

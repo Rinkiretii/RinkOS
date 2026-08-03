@@ -2,12 +2,14 @@
 #include "scr/keyboard.h"
 #include "scr/mm.h"
 #include "scr/mmap.h"
+#include "scr/shell.h"
 
 extern void kprint(const char *);
 extern void vga_clear(void);
 extern void vga_enable_cursor(void);
 extern void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes);
 extern void reboot(void);
+extern uint32_t timer_get_seconds(void);
 
 
 #define LINE_BUF_SIZE 128
@@ -38,6 +40,13 @@ static void kprint_uint(uint32_t val)
     kprint(&buf[i + 1]);
 }
 
+static void cmd_uptime(void)
+{
+    kprint("Uptime: ");
+    kprint_uint(timer_get_seconds());
+    kprint(" second\n");
+}
+
 static void cmd_help(void)
 {
     kprint("Available commands:\n");
@@ -47,6 +56,8 @@ static void cmd_help(void)
     kprint("  info    - OS and system information\n");
     kprint("  meminfo - show heap usage\n");
     kprint("  reboot  - restart\n");
+    kprint("  shutdown- power off\n");
+    kprint("  uptime  - show system uptime in seconds\n");
 }
 
 static void cmd_echo(const char *args)
@@ -77,7 +88,7 @@ static void cmd_meminfo(void)
 
 static void cmd_info(void)
 {
-    kprint("RinkOS 0.07\n");
+    kprint("RinkOS 0.08\n");
 }
 
 static void run_command(char *line)
@@ -98,11 +109,16 @@ static void run_command(char *line)
         cmd_info();
     } else if (str_eq(line, "meminfo")) {
         cmd_meminfo();
-    } else if (str_eq(line, "reboot")) 
+    } else if (str_eq(line, "reboot")) {
         reboot();
-    else {
+    } else  if (str_eq(line, "shutdown")) {
+        reboot();
+    } else  if (str_eq(line, "uptime")) {
+        cmd_uptime();
+    } else {
+        kprint("Unknown command: ");
         kprint(line);
-        kprint(": command not found\n");
+        kprint("\n");
     }
 }
 
