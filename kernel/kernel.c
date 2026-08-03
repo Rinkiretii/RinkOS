@@ -138,7 +138,6 @@ void reboot(void)
     asm volatile("hlt");
 }
 
-/*
 void kprint_hex32(uint32_t val)
 {
     char buf[11];
@@ -151,7 +150,7 @@ void kprint_hex32(uint32_t val)
     }
     buf[10] = '\0';
 }
-*/
+
 
 /* Entry point called from kernel_entry.asm */
 void kernel_main(void)
@@ -174,7 +173,6 @@ void kernel_main(void)
     asm volatile("sti");
 
     kmalloc_init();
-//    mmap_dump();
     
     shell_run();
 }

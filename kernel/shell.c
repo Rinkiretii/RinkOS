@@ -9,6 +9,7 @@ extern void vga_clear(void);
 extern void vga_enable_cursor(void);
 extern void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes);
 extern void reboot(void);
+extern void mmap_dump(void);
 extern uint32_t timer_get_seconds(void);
 
 
@@ -86,13 +87,22 @@ static void cmd_meminfo(void)
     kprint(" bytes\n");
 }
 
-static void cmd_info(void)
+static void debug(void)
 {
-    kprint("RinkOS 0.09\n");
-    kprint("Uptime:");
+    kprint("Debug info:\n");
+    cmd_meminfo();
+    kprint("Uptime: ");
     kprint_uint(timer_get_seconds());
     kprint(" seconds\n");
-    kprint("Heap usage:\n");
+    mmap_dump();
+}
+
+static void cmd_info(void)
+{
+    kprint("RinkOS 0.010\n");
+    kprint("Uptime: ");
+    kprint_uint(timer_get_seconds());
+    kprint(" seconds\n");
     cmd_meminfo();
 }
 
@@ -120,6 +130,8 @@ static void run_command(char *line)
         reboot();
     } else  if (str_eq(line, "uptime")) {
         cmd_uptime();
+    } else if (str_eq(line, "debug")) {
+        debug();
     } else {
         kprint("Unknown command: ");
         kprint(line);
