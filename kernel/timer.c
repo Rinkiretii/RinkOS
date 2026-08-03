@@ -1,6 +1,8 @@
 #include <stdint.h>
+#include <stddef.h>
 #include "scr/io.h"
 #include "scr/timer.h"
+#include "scr/task.h"
 
 static volatile uint32_t ticks = 0;
 static uint32_t tick_frequency = 100; /* set by timer_init */
@@ -8,6 +10,8 @@ static uint32_t tick_frequency = 100; /* set by timer_init */
 #define PIT_CHANNEL0 0x40
 #define PIT_COMMAND  0x43
 #define PIT_BASE_FREQ 1193182u
+
+extern void task_switch(uint32_t *old_esp_store, uint32_t new_esp);
 
 void timer_init(uint32_t frequency_hz)
 {
@@ -23,6 +27,7 @@ void timer_handler(void)
 {
     ticks++;
     outb(0x20, 0x20);   /* EOI, same as keyboard_handler */
+    schedule(NULL);      /* call scheduler to switch tasks if needed */
 }
 
 uint32_t timer_get_ticks(void)

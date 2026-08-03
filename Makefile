@@ -68,6 +68,10 @@ $(BUILD)/timer.o: kernel/timer.c
 	mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $< -o $@
 
+$(BUILD)/task.o: kernel/task.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
 # ---- Link kernel entry + kernel.c into one flat binary ----
 $(BUILD)/kernel.bin: \
 	$(BUILD)/kernel_entry.o \
@@ -79,7 +83,8 @@ $(BUILD)/kernel.bin: \
 	$(BUILD)/keyboard.o \
 	$(BUILD)/mm.o \
 	$(BUILD)/timer.o \
-	$(BUILD)/shell.o
+	$(BUILD)/shell.o \
+	$(BUILD)/task.o
 
 	$(LD) $(LDFLAGS) -o $@ \
 	$(BUILD)/kernel_entry.o \
@@ -91,7 +96,8 @@ $(BUILD)/kernel.bin: \
 	$(BUILD)/keyboard.o \
 	$(BUILD)/mm.o \
 	$(BUILD)/shell.o \
-	$(BUILD)/timer.o
+	$(BUILD)/timer.o \
+	$(BUILD)/task.o
 
 # ---- Combine bootloader + kernel into a single disk image ----
 $(BUILD)/rinkos.img: $(BUILD)/boot.bin $(BUILD)/kernel.bin

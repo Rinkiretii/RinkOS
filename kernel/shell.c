@@ -11,6 +11,7 @@ extern void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes);
 extern void reboot(void);
 extern void mmap_dump(void);
 extern uint32_t timer_get_seconds(void);
+extern char *system_version;
 
 
 #define LINE_BUF_SIZE 128
@@ -90,6 +91,8 @@ static void cmd_meminfo(void)
 static void debug(void)
 {
     kprint("Debug info:\n");
+    kprint(system_version);
+    kprint("\n");
     cmd_meminfo();
     kprint("Uptime: ");
     kprint_uint(timer_get_seconds());
@@ -99,7 +102,8 @@ static void debug(void)
 
 static void cmd_info(void)
 {
-    kprint("RinkOS 0.010\n");
+    kprint(system_version);
+    kprint("\n");
     kprint("Uptime: ");
     kprint_uint(timer_get_seconds());
     kprint(" seconds\n");
