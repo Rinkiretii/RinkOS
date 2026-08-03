@@ -72,6 +72,14 @@ $(BUILD)/task.o: kernel/task.c
 	mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $< -o $@
 
+$(BUILD)/disk.o: kernel/disk.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(BUILD)/fs.o: kernel/fs.c
+	mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) $< -o $@
+
 # ---- Link kernel entry + kernel.c into one flat binary ----
 $(BUILD)/kernel.bin: \
 	$(BUILD)/kernel_entry.o \
@@ -84,7 +92,9 @@ $(BUILD)/kernel.bin: \
 	$(BUILD)/mm.o \
 	$(BUILD)/timer.o \
 	$(BUILD)/shell.o \
-	$(BUILD)/task.o
+	$(BUILD)/task.o \
+	$(BUILD)/disk.o \
+	$(BUILD)/fs.o
 
 	$(LD) $(LDFLAGS) -o $@ \
 	$(BUILD)/kernel_entry.o \
@@ -97,7 +107,9 @@ $(BUILD)/kernel.bin: \
 	$(BUILD)/mm.o \
 	$(BUILD)/shell.o \
 	$(BUILD)/timer.o \
-	$(BUILD)/task.o
+	$(BUILD)/task.o \
+	$(BUILD)/disk.o \
+	$(BUILD)/fs.o
 
 # ---- Combine bootloader + kernel into a single disk image ----
 $(BUILD)/rinkos.img: $(BUILD)/boot.bin $(BUILD)/kernel.bin
@@ -117,10 +129,10 @@ $(BUILD)/rinkos.img: $(BUILD)/boot.bin $(BUILD)/kernel.bin
 # geometry is fixed (80 cylinders, 2 heads, 18 sectors/track) so the
 # simple CHS reads in boot.asm behave predictably.
 run: $(BUILD)/rinkos.img
-	qemu-system-i386 -fda $(BUILD)/rinkos.img
+	qemu-system-i386 -drive file=$(BUILD)/rinkos.img,format=raw,if=ide
 
 debug: $(BUILD)/rinkos.img
-	qemu-system-i386 -d in_asm,int -D log.txt -fda $(BUILD)/rinkos.img
+	qemu-system-i386 -d in_asm,int -D log.txt -drive file=$(BUILD)/rinkos.img,format=raw,if=ide
 
 clean:
 	rm -rf $(BUILD)

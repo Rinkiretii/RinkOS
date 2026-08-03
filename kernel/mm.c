@@ -11,7 +11,7 @@ extern void kprint_hex32(uint32_t);
 #define HEAP_START ((uint32_t)&_bss_end)
 #define HEAP_END   0x80000u   /* stay well clear of the 0x90000 stack */
 
-uint32_t find_heap_end(uint32_t heap_start)
+static uint32_t find_heap_end(uint32_t heap_start)
 {
     mmap_entry_t *entries = (mmap_entry_t *)MMAP_ADDR;
     uint16_t count = MMAP_COUNT;

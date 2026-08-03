@@ -15,6 +15,8 @@
 #include "scr/timer.h"
 #include "scr/task.h"
 #include "scr/shell.h"
+#include "scr/disk.h"
+#include "scr/fs.h"
  
 /* VGA text mode lives at a fixed physical address once the
  * BIOS has set it up; 80x25 characters, 2 bytes per cell
@@ -39,8 +41,9 @@ extern void mmap_dump();
 extern void shell_run();
 extern void timer_init();
 extern void tasks_init();
+extern void fs_init();
 
-char *system_version = "RinkOS 0.012";
+char *system_version = "RinkOS 0.014";
 
 void vga_update_cursor(void)
 {
@@ -154,6 +157,8 @@ void kprint_hex32(uint32_t val)
         buf[2 + i] = hex[(val >> ((7 - i) * 4)) & 0xF];
     }
     buf[10] = '\0';
+
+    kprint(buf);
 }
 
 void shell_task(void) {
@@ -188,6 +193,20 @@ void kernel_main(void)
     tasks_init();
     task_create(shell_task);
     task_create(background_task);
+    fs_init();
+
+    uint8_t test_write[512];
+    for (int i = 0; i < 512; i++) test_write[i] = 0xAB;
+    disk_write_sector(50, test_write);
+
+    uint8_t test_read[512];
+    disk_read_sector(50, test_read);
+
+    kprint("Write/read test: ");
+    kprint_hex32(test_read[0]);
+    kprint(" ");
+    kprint_hex32(test_read[511]);
+    kprint("\n");
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
     
