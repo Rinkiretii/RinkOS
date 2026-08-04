@@ -68,7 +68,7 @@ void fs_init(void)
         }
         table_save();
 
-        kprint("Filesystem formatted.\n");
+//        kprint("Filesystem formatted.\n");
     } else {
         table_load();
         kprint("Filesystem loaded.\n");
@@ -181,4 +181,64 @@ void fs_list(void)
     if (!any) {
         kprint("  (no files)\n");
     }
+}
+
+int fs_delete(const char *name)
+{
+    int slot = find_file(name);
+    if (slot < 0) return -1;
+
+    table[slot].used = 0;
+    table[slot].size_bytes = 0;
+    table_save();
+    return 0;
+}
+
+int fs_append(const char *name, const uint8_t *data, uint32_t extra_size)
+{
+    int slot = find_file(name);
+    if (slot < 0) {
+        slot = fs_create(name);
+        if (slot < 0) return -1;
+    }
+
+    uint32_t current_size = table[slot].size_bytes;
+    uint32_t new_size = current_size + extra_size;
+    uint32_t max_bytes = FS_MAX_FILE_SECTORS * 512;
+
+    if (new_size > max_bytes) {
+        return -1; /* would overflow this file's fixed sector allocation */
+    }
+
+    /* read the existing sectors that contain the tail we're appending after,
+     * since we can only write in whole 512-byte sectors */
+    uint32_t start_sector = current_size / 512;
+    uint32_t byte_offset_in_sector = current_size % 512;
+
+    uint8_t sector_buf[512];
+    uint32_t written = 0;
+
+    while (written < extra_size) {
+        uint32_t sector_index = start_sector + (byte_offset_in_sector + written) / 512;
+        uint32_t offset_in_this_sector = (byte_offset_in_sector + written) % 512;
+
+        /* load existing sector content first, so we don't clobber other bytes in it */
+        disk_read_sector(table[slot].start_lba + sector_index, sector_buf);
+
+        uint32_t space_left_in_sector = 512 - offset_in_this_sector;
+        uint32_t remaining_to_write = extra_size - written;
+        uint32_t chunk = remaining_to_write < space_left_in_sector ? remaining_to_write : space_left_in_sector;
+
+        for (uint32_t i = 0; i < chunk; i++) {
+            sector_buf[offset_in_this_sector + i] = data[written + i];
+        }
+
+        disk_write_sector(table[slot].start_lba + sector_index, sector_buf);
+
+        written += chunk;
+    }
+
+    table[slot].size_bytes = new_size;
+    table_save();
+    return 0;
 }

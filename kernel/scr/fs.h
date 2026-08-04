@@ -23,5 +23,7 @@ int fs_create(const char *name);
 int fs_write(const char *name, const uint8_t *data, uint32_t size);
 int fs_read(const char *name, uint8_t *buffer, uint32_t max_size, uint32_t *out_size);
 void fs_list(void);
+int fs_delete(const char *name);
+int fs_append(const char *name, const uint8_t *data, uint32_t extra_size);
 
 #endif

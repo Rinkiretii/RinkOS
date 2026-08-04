@@ -43,7 +43,7 @@ extern void timer_init();
 extern void tasks_init();
 extern void fs_init();
 
-char *system_version = "RinkOS 0.014";
+char *system_version = "RinkOS 0.015";
 
 void vga_update_cursor(void)
 {
@@ -194,19 +194,6 @@ void kernel_main(void)
     task_create(shell_task);
     task_create(background_task);
     fs_init();
-
-    uint8_t test_write[512];
-    for (int i = 0; i < 512; i++) test_write[i] = 0xAB;
-    disk_write_sector(50, test_write);
-
-    uint8_t test_read[512];
-    disk_read_sector(50, test_read);
-
-    kprint("Write/read test: ");
-    kprint_hex32(test_read[0]);
-    kprint(" ");
-    kprint_hex32(test_read[511]);
-    kprint("\n");
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
     

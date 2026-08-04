@@ -119,20 +119,76 @@ static void cmd_uptime(void)
     kprint(" second\n");
 }
 
+static void cmd_delete(const char *args)
+{
+    if (*args == ' ') args++;
+    if (*args == '\0') {
+        kprint("usage: delete <filename>\n");
+        return;
+    }
+
+    int result = fs_delete(args);
+    if (result < 0) {
+        kprint(args);
+        kprint(": not found\n");
+    } else {
+        kprint("Deleted ");
+        kprint(args);
+        kprint("\n");
+    }
+}
+
+static void cmd_append(const char *args)
+{
+    if (*args == ' ') args++;
+
+    char filename[FS_NAME_LEN];
+    int i = 0;
+    while (args[i] && args[i] != ' ' && i < FS_NAME_LEN - 1) {
+        filename[i] = args[i];
+        i++;
+    }
+    filename[i] = '\0';
+
+    if (i == 0) {
+        kprint("usage: append <filename> <text>\n");
+        return;
+    }
+
+    const char *content = args + i;
+    if (*content == ' ') content++;
+
+    int len = 0;
+    while (content[len]) len++;
+
+    int result = fs_append(filename, (const uint8_t *)content, (uint32_t)len);
+    if (result < 0) {
+        kprint("append failed (file too large or table full)\n");
+    } else {
+        kprint("Appended ");
+        kprint_uint((uint32_t)len);
+        kprint(" bytes to ");
+        kprint(filename);
+        kprint("\n");
+    }
+}
+
 static void cmd_help(void)
 {
     kprint("Available commands:\n");
-    kprint("  help    - show this list\n");
-    kprint("  clear   - clear the screen\n");
-    kprint("  echo    - print text back, e.g. echo hello\n");
-    kprint("  info    - OS and system information\n");
-    kprint("  meminfo - show heap usage\n");
-    kprint("  reboot  - restart\n");
-    kprint("  shutdown- power off\n");
-    kprint("  uptime  - show system uptime in seconds\n");
-    kprint("  ls              - list files\n");
-    kprint("  write <f> <txt> - write text to a file\n");
-    kprint("  cat <f>         - print a file's contents\n");
+    kprint(" help             - show this list\n");
+    kprint(" clear            - clear the screen\n");
+    kprint(" echo             - print text back, e.g. echo hello\n");
+    kprint(" info             - OS and system information\n");
+    kprint(" meminfo          - show heap usage\n");
+    kprint(" reboot           - restart\n");
+    kprint(" shutdown         - power off\n");
+    kprint(" uptime           - show system uptime in seconds\n");
+    kprint(" ls               - list files\n");
+    kprint(" write <f> <txt>  - write text to a file\n");
+    kprint(" cat <f>          - print a file's contents\n");
+    kprint(" delete <f>       - delete a file\n");
+    kprint(" append <f> <txt> - append text to a file\n");
 }
 
 static void cmd_echo(const char *args)
@@ -183,13 +239,6 @@ static void cmd_info(void)
     cmd_meminfo();
 }
 
-static void cmd_r(void)
-{
-    kprint("Counter: ");
-//    kprint_uint(counter);
-    kprint("\n");
-}
-
 static void run_command(char *line)
 {
     if (line[0] == '\0') {
@@ -216,8 +265,6 @@ static void run_command(char *line)
         cmd_uptime();
     } else if (str_eq(line, "debug")) {
         debug();
-    } else if (str_eq(line, "r")) {
-        cmd_r();
     } else if (str_eq(line, "ls")) {
         cmd_ls();
     } else if (line[0] == 'w' && line[1] == 'r' && line[2] == 'i' && line[3] == 't' &&
@@ -226,7 +273,13 @@ static void run_command(char *line)
     } else if (line[0] == 'c' && line[1] == 'a' && line[2] == 't' &&
                (line[3] == ' ' || line[3] == '\0')) {
         cmd_cat(line + 3); 
-    }  else {
+    } else if (line[0] == 'd' && line[1] == 'e' && line[2] == 'l' && line[3] == 'e' &&
+               line[4] == 't' && line[5] == 'e' && (line[6] == ' ' || line[6] == '\0')) {
+        cmd_delete(line + 6);
+    } else if (line[0] == 'a' && line[1] == 'p' && line[2] == 'p' && line[3] == 'e' &&
+               line[4] == 'n' && line[5] == 'd' && (line[6] == ' ' || line[6] == '\0')) {
+        cmd_append(line + 6);  
+    } else {
         kprint("Unknown command: ");
         kprint(line);
         kprint("\n");
