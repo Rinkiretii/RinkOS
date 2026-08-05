@@ -18,28 +18,6 @@ void tasks_init(void)
     task_count = 0;
 }
 
-void task_create(void (*entry)(void))
-{
-    if (task_count >= MAX_TASKS) {
-        return; /* no room */
-    }
-
-    uint8_t *stack = (uint8_t *)kmalloc(TASK_STACK_SIZE);
-    uint32_t *sp = (uint32_t *)(stack + TASK_STACK_SIZE);
-
-    /* build a fake stack frame so our context-switch code, written
-     * as a normal function, can "return" into the new task via ret */
-    sp -= 1; *sp = (uint32_t)entry;   /* return address: task entry point */
-    sp -= 1; *sp = 0;                 /* ebp */
-    sp -= 1; *sp = 0;                 /* ebx */
-    sp -= 1; *sp = 0;                 /* esi */
-    sp -= 1; *sp = 0;                 /* edi */
-
-    int slot = task_count++;
-    tasks[slot].esp = (uint32_t)sp;
-    tasks[slot].used = 1;
-}
-
 void schedule(uint32_t *old_esp_store)
 {
     (void)old_esp_store;
@@ -68,4 +46,50 @@ void schedule(uint32_t *old_esp_store)
     current_task = next;
 
     task_switch(&tasks[prev].esp, tasks[next].esp);
+}
+
+static void name_copy(char *dst, const char *src, int max_len)
+{
+    int i = 0;
+    while (src[i] && i < max_len - 1) { dst[i] = src[i]; i++; }
+    dst[i] = '\0';
+}
+
+void task_create_named(void (*entry)(void), const char *name)
+{
+    if (task_count >= MAX_TASKS) return;
+
+    uint8_t *stack = (uint8_t *)kmalloc(TASK_STACK_SIZE);
+    uint32_t *sp = (uint32_t *)(stack + TASK_STACK_SIZE);
+
+    sp -= 1; *sp = (uint32_t)entry;
+    sp -= 1; *sp = 0;
+    sp -= 1; *sp = 0;
+    sp -= 1; *sp = 0;
+    sp -= 1; *sp = 0;
+
+    int slot = task_count++;
+    tasks[slot].esp = (uint32_t)sp;
+    tasks[slot].used = 1;
+    name_copy(tasks[slot].name, name, 16);
+}
+
+
+/* keep old task_create for compatibility, just call the named version */
+void task_create(void (*entry)(void))
+{
+    task_create_named(entry, "unnamed");
+}
+
+extern void kprint(const char *);
+
+void task_list(void)
+{
+    for (int i = 0; i < task_count; i++) {
+        if (!tasks[i].used) continue;
+        kprint("  ");
+        kprint(tasks[i].name);
+        if (i == current_task) kprint("  (running)");
+        kprint("\n");
+    }
 }

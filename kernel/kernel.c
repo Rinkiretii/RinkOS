@@ -191,8 +191,8 @@ void kernel_main(void)
     idt_init();
     pic_remap();
     tasks_init();
-    task_create(shell_task);
-    task_create(background_task);
+    task_create_named(shell_task, "shell");
+    task_create_named(background_task, "background");
     fs_init();
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */

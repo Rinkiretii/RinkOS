@@ -173,6 +173,12 @@ static void cmd_append(const char *args)
     }
 }
 
+static void cmd_top(void)
+{
+    kprint("Tasks:\n");
+    task_list();
+}
+
 static void cmd_help(void)
 {
     kprint("Available commands:\n");
@@ -189,6 +195,7 @@ static void cmd_help(void)
     kprint(" cat <f>          - print a file's contents\n");
     kprint(" delete <f>       - delete a file\n");
     kprint(" append <f> <txt> - append text to a file\n");
+    kprint(" top              - show running tasks\n");
 }
 
 static void cmd_echo(const char *args)
@@ -279,6 +286,8 @@ static void run_command(char *line)
     } else if (line[0] == 'a' && line[1] == 'p' && line[2] == 'p' && line[3] == 'e' &&
                line[4] == 'n' && line[5] == 'd' && (line[6] == ' ' || line[6] == '\0')) {
         cmd_append(line + 6);  
+    } else if (str_eq(line, "top")) {
+        cmd_top();
     } else {
         kprint("Unknown command: ");
         kprint(line);
