@@ -43,7 +43,7 @@ extern void timer_init();
 extern void tasks_init();
 extern void fs_init();
 
-char *system_version = "RinkOS 0.015";
+char *system_version = "RinkOS 0.02";
 
 void vga_update_cursor(void)
 {
@@ -162,18 +162,25 @@ void kprint_hex32(uint32_t val)
 }
 
 void shell_task(void) {
-
     asm volatile("sti");
     shell_run();
 }
 
-void background_task(void)
-{
+void kernel(void) {
     asm volatile("sti");
-    volatile uint32_t counter = 0;
+
+    task_create_named(shell_task, "shell");
+    fs_init();
+
+    while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
+    
+    asm volatile("sti");  /* enable interrupts */
+
     for (;;) {
-        counter++;   /* just spins, proves it's actually scheduled without corrupting shell output */
+        asm volatile("hlt");
     }
+
+    kmalloc_init();
 }
 
 /* Entry point called from kernel_entry.asm */
@@ -187,13 +194,13 @@ void kernel_main(void)
     kprint("--------------------------------\n");
     kprint("Kernel is running in 32-bit protected mode.\n");
     kprint("\n");
-    
+    kprint(system_version);
+    kprint("\n");
+
     idt_init();
     pic_remap();
     tasks_init();
-    task_create_named(shell_task, "shell");
-    task_create_named(background_task, "background");
-    fs_init();
+    task_create_named(kernel, "kernel");
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
     
@@ -202,6 +209,4 @@ void kernel_main(void)
     for (;;) {
         asm volatile("hlt");
     }
-
-    kmalloc_init();
 }

@@ -71,7 +71,7 @@ void fs_init(void)
 //        kprint("Filesystem formatted.\n");
     } else {
         table_load();
-        kprint("Filesystem loaded.\n");
+//        kprint("Filesystem loaded.\n");
     }
 }
 
