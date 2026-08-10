@@ -18,7 +18,7 @@ extern char *system_version;
 extern uint32_t counter;
 extern void kprint_uint();
 
-#define LINE_BUF_SIZE 128
+#define LINE_BUF_SIZE 258
 // #define HISTORY_SIZE 8
 
 // static char history[HISTORY_SIZE][LINE_BUF_SIZE];
