@@ -19,10 +19,10 @@ extern uint32_t counter;
 extern void kprint_uint();
 
 #define LINE_BUF_SIZE 258
-// #define HISTORY_SIZE 8
+#define HISTORY_SIZE 16
 
-// static char history[HISTORY_SIZE][LINE_BUF_SIZE];
-// static int history_count = 0;
+static char history[HISTORY_SIZE][LINE_BUF_SIZE];
+static int history_count = 0;
 
 static int str_eq(const char *a, const char *b)
 {
@@ -252,13 +252,13 @@ static void cmd_help(void)
     kprint(" reboot           - restart\n");
     kprint(" shutdown         - power off\n");
     kprint(" uptime           - show system uptime in seconds\n");
-//    kprint(" history          - show recent commands\n");
+    kprint(" history          - show recent commands\n");
     kprint(" ls               - list files\n");
     kprint(" write <f> <txt>  - write text to a file\n");
     kprint(" cat <f>          - print a file's contents\n");
     kprint(" delete <f>       - delete a file\n");
     kprint(" stat <f>         - show file size\n");
-    kprint("  mv <old> <new>  - rename a file\n");
+    kprint(" mv <old> <new>   - rename a file\n");
     kprint(" append <f> <txt> - append text to a file\n");
     kprint(" top              - show running tasks\n");
 }
@@ -300,7 +300,7 @@ static void debug(void)
     mmap_dump();
 }
 
-/*
+
 static void history_add(const char *line)
 {
     if (line[0] == '\0') return;
@@ -320,7 +320,7 @@ static void cmd_history(void)
         kprint("\n");
     }
 }
-*/
+
 
 static void cmd_info(void)
 {
@@ -337,6 +337,8 @@ static void run_command(char *line)
     if (line[0] == '\0') {
         return; /* empty line, nothing to do */
     }
+
+    history_add(line);
 
     if (str_eq(line, "help")) {
         cmd_help();
@@ -379,10 +381,9 @@ static void run_command(char *line)
         cmd_stat(line + 4);
     } else if (line[0] == 'm' && line[1] == 'v' && (line[2] == ' ' || line[2] == '\0')) {
         cmd_mv(line + 2);
-    }
-//    } else if (str_eq(line, "history")) {
-//        cmd_history(); 
-    else {
+    } else if (str_eq(line, "history")) {
+        cmd_history(); 
+    } else {
         kprint("Unknown command: ");
         kprint(line);
         kprint("\n");
