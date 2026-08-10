@@ -26,5 +26,6 @@ void fs_list(void);
 int fs_delete(const char *name);
 int fs_append(const char *name, const uint8_t *data, uint32_t extra_size);
 int fs_stat(const char *name, uint32_t *out_size);
+int fs_rename(const char *old_name, const char *new_name);
 
 #endif

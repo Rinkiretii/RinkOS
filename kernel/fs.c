@@ -243,6 +243,17 @@ int fs_append(const char *name, const uint8_t *data, uint32_t extra_size)
     return 0;
 }
 
+int fs_rename(const char *old_name, const char *new_name)
+{
+    int slot = find_file(old_name);
+    if (slot < 0) return -1;
+    if (find_file(new_name) >= 0) return -1;
+
+    str_copy(table[slot].name, new_name, FS_NAME_LEN);
+    table_save();
+    return 0;
+}
+
 int fs_stat(const char *name, uint32_t *out_size)
 {
     int slot = find_file(name);

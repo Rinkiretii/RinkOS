@@ -43,7 +43,7 @@ extern void timer_init();
 extern void tasks_init();
 extern void fs_init();
 
-char *system_version = "RinkOS 0.022";
+char *system_version = "RinkOS 0.023-1";
 
 void vga_update_cursor(void)
 {

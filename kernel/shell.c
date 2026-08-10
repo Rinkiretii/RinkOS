@@ -106,6 +106,34 @@ static void cmd_cat(const char *args)
     kprint("\n");
 }
 
+static void cmd_mv(const char *args)
+{
+    if (*args == ' ') args++;
+    char old_name[FS_NAME_LEN];
+    int i = 0;
+    while (args[i] && args[i] != ' ' && i < FS_NAME_LEN - 1) { old_name[i] = args[i]; i++; }
+    old_name[i] = '\0';
+
+    const char *rest = args + i;
+    if (*rest == ' ') rest++;
+
+    if (i == 0 || *rest == '\0') {
+        kprint("usage: mv <old> <new>\n");
+        return;
+    }
+
+    int result = fs_rename(old_name, rest);
+    if (result < 0) {
+        kprint("mv failed (not found or target exists)\n");
+    } else {
+        kprint("Renamed ");
+        kprint(old_name);
+        kprint(" to ");
+        kprint(rest);
+        kprint("\n");
+    }
+}
+
 void kprint_uint(uint32_t val)
 {
     char buf[11];
@@ -230,6 +258,7 @@ static void cmd_help(void)
     kprint(" cat <f>          - print a file's contents\n");
     kprint(" delete <f>       - delete a file\n");
     kprint(" stat <f>         - show file size\n");
+    kprint("  mv <old> <new>  - rename a file\n");
     kprint(" append <f> <txt> - append text to a file\n");
     kprint(" top              - show running tasks\n");
 }
@@ -348,6 +377,8 @@ static void run_command(char *line)
     } else if (line[0] == 's' && line[1] == 't' && line[2] == 'a' && line[3] == 't' &&
                (line[4] == ' ' || line[4] == '\0')) {
         cmd_stat(line + 4);
+    } else if (line[0] == 'm' && line[1] == 'v' && (line[2] == ' ' || line[2] == '\0')) {
+        cmd_mv(line + 2);
     }
 //    } else if (str_eq(line, "history")) {
 //        cmd_history(); 
