@@ -184,6 +184,29 @@ static void cmd_append(const char *args)
     }
 }
 
+
+static void cmd_stat(const char *args)
+{
+    if (*args == ' ') args++;
+    if (*args == '\0') {
+        kprint("usage: stat <filename>\n");
+        return;
+    }
+
+    uint32_t size;
+    int result = fs_stat(args, &size);
+    if (result < 0) {
+        kprint(args);
+        kprint(": not found\n");
+        return;
+    }
+
+    kprint(args);
+    kprint(": ");
+    kprint_uint(size);
+    kprint(" bytes\n");
+}
+
 static void cmd_top(void)
 {
     kprint("Tasks:\n");
@@ -206,6 +229,7 @@ static void cmd_help(void)
     kprint(" write <f> <txt>  - write text to a file\n");
     kprint(" cat <f>          - print a file's contents\n");
     kprint(" delete <f>       - delete a file\n");
+    kprint(" stat <f>         - show file size\n");
     kprint(" append <f> <txt> - append text to a file\n");
     kprint(" top              - show running tasks\n");
 }
@@ -321,9 +345,13 @@ static void run_command(char *line)
         cmd_append(line + 6);  
     } else if (str_eq(line, "top")) {
         cmd_top();
+    } else if (line[0] == 's' && line[1] == 't' && line[2] == 'a' && line[3] == 't' &&
+               (line[4] == ' ' || line[4] == '\0')) {
+        cmd_stat(line + 4);
+    }
 //    } else if (str_eq(line, "history")) {
 //        cmd_history(); 
-    } else {
+    else {
         kprint("Unknown command: ");
         kprint(line);
         kprint("\n");

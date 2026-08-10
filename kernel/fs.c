@@ -242,3 +242,11 @@ int fs_append(const char *name, const uint8_t *data, uint32_t extra_size)
     table_save();
     return 0;
 }
+
+int fs_stat(const char *name, uint32_t *out_size)
+{
+    int slot = find_file(name);
+    if (slot < 0) return -1;
+    if (out_size) *out_size = table[slot].size_bytes;
+    return 0;
+}
