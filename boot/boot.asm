@@ -77,7 +77,7 @@ load_kernel:
     call print_string
 
     mov bx, KERNEL_OFFSET      ; ES:BX = where to load the kernel
-    mov dh, 32                 ; number of sectors to read (adjust to kernel size)
+    mov dh, 48                 ; number of sectors to read (adjust to kernel size)
     mov dl, [BOOT_DRIVE]
     call disk_load
     ret
