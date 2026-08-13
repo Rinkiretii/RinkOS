@@ -43,7 +43,7 @@ extern void timer_init();
 extern void tasks_init();
 extern void fs_init();
 
-char *system_version = "RinkOS 0.023-2";
+char *system_version = "RinkOS 0.024";
 
 void vga_update_cursor(void)
 {
@@ -144,6 +144,9 @@ void reboot(void)
     asm volatile("int $0x03");  /* deliberately trigger an unhandled exception */
 
     asm volatile("hlt");
+}
+
+void shutdown(void) {
 }
 
 void kprint_hex32(uint32_t val)

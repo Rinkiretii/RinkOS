@@ -5,7 +5,7 @@
 
 #define FS_MAGIC          0x52494E4B
 #define FS_MAX_FILES      16
-#define FS_NAME_LEN       12
+#define FS_NAME_LEN       16
 #define FS_SUPERBLOCK_LBA  100
 #define FS_TABLE_LBA      101
 #define FS_DATA_START_LBA 103  /* leave room, table might span a bit more than 1 sector with padding */

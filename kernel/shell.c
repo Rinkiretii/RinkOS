@@ -12,6 +12,7 @@ extern void vga_clear(void);
 extern void vga_enable_cursor(void);
 extern void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes);
 extern void reboot(void);
+extern void shutdown(void);
 extern void mmap_dump(void);
 extern uint32_t timer_get_seconds(void);
 extern char *system_version;
@@ -74,7 +75,7 @@ static void cmd_write(const char *args)
     if (result < 0) {
         kprint("write failed (file table full?)\n");
     } else {
-        kprint("Wrote ");
+        kprint("Write ");
         kprint_uint((uint32_t)len);
         kprint(" bytes to ");
         kprint(filename);
@@ -250,7 +251,7 @@ static void cmd_help(void)
     kprint(" info             - OS and system information\n");
     kprint(" meminfo          - show heap usage\n");
     kprint(" reboot           - restart\n");
-    kprint(" shutdown         - power off\n");
+//    kprint(" shutdown         - power off\n");
     kprint(" uptime           - show system uptime in seconds\n");
     kprint(" history          - show recent commands\n");
     kprint(" ls               - list files\n");
@@ -355,7 +356,7 @@ static void run_command(char *line)
     } else if (str_eq(line, "reboot")) {
         reboot();
     } else  if (str_eq(line, "shutdown")) {
-        reboot();
+        shutdown();
     } else  if (str_eq(line, "uptime")) {
         cmd_uptime();
     } else if (str_eq(line, "debug")) {
