@@ -89,7 +89,7 @@ void task_list(void)
         if (!tasks[i].used) continue;
         kprint("  ");
         kprint(tasks[i].name);
-        if (i == current_task) kprint("  (running)");
+        if (i == current_task) kprint(" - running");
         kprint("\n");
     }
 }

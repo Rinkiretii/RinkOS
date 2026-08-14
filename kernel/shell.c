@@ -34,6 +34,10 @@ static int str_eq(const char *a, const char *b)
     return *a == *b;
 }
 
+static void error_command_no_work_C(void) {
+    kprint(" 001 this command in develop, sorry.");
+}
+
 static void cmd_ls(void)
 {
     kprint("Files:\n");
@@ -252,6 +256,7 @@ static void cmd_help(void)
     kprint(" meminfo          - show heap usage\n");
     kprint(" reboot           - restart\n");
 //    kprint(" shutdown         - power off\n");
+//    kprint(" set_max_task     - set max task");
     kprint(" uptime           - show system uptime in seconds\n");
     kprint(" history          - show recent commands\n");
     kprint(" ls               - list files\n");
@@ -384,6 +389,10 @@ static void run_command(char *line)
         cmd_mv(line + 2);
     } else if (str_eq(line, "history")) {
         cmd_history(); 
+    } else if (str_eq(line, "set_max_task")) {
+        kprint("Error");
+        error_command_no_work_C();
+        kprint("\n");
     } else {
         kprint("Unknown command: ");
         kprint(line);
