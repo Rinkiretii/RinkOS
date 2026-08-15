@@ -40,8 +40,54 @@ static void error_command_no_work_C(void) {
 
 static void cmd_ls(void)
 {
-    kprint("Files:\n");
+    char cwd[FS_NAME_LEN];
+    fs_getcwd(cwd, sizeof(cwd));
+    kprint("Contents of ");
+    kprint(cwd);
+    kprint(":\n");
     fs_list();
+}
+
+static void cmd_pwd(void)
+{
+    char cwd[FS_NAME_LEN];
+    fs_getcwd(cwd, sizeof(cwd));
+    kprint(cwd);
+    kprint("\n");
+}
+
+static void cmd_mkdir(const char *args)
+{
+    if (*args == ' ') args++;
+    if (*args == '\0') {
+        kprint("usage: mkdir <path>\n");
+        return;
+    }
+
+    int result = fs_mkdir(args);
+    if (result < 0) {
+        kprint("mkdir failed (already exists or path invalid)\n");
+    } else {
+        kprint("Created directory ");
+        kprint(args);
+        kprint("\n");
+    }
+}
+
+static void cmd_cd(const char *args)
+{
+    if (*args == ' ') args++;
+    if (*args == '\0') {
+        kprint("usage: cd <path>\n");
+        return;
+    }
+
+    int result = fs_chdir(args);
+    if (result < 0) {
+        kprint("cd: no such directory: ");
+        kprint(args);
+        kprint("\n");
+    }
 }
 
 static void str_copy_local(char *dst, const char *src, int max_len)
@@ -266,6 +312,9 @@ static void cmd_help(void)
     kprint(" stat <f>         - show file size\n");
     kprint(" mv <old> <new>   - rename a file\n");
     kprint(" append <f> <txt> - append text to a file\n");
+    kprint(" mkdir <path>     - create a directory\n");
+    kprint(" cd <path>        - change directory (.. goes up, / is root)\n");
+    kprint(" pwd              - show current directory\n");
     kprint(" top              - show running tasks\n");
 }
 
@@ -387,6 +436,13 @@ static void run_command(char *line)
         cmd_stat(line + 4);
     } else if (line[0] == 'm' && line[1] == 'v' && (line[2] == ' ' || line[2] == '\0')) {
         cmd_mv(line + 2);
+    } else if (line[0] == 'm' && line[1] == 'k' && line[2] == 'd' && line[3] == 'i' &&
+               line[4] == 'r' && (line[5] == ' ' || line[5] == '\0')) {
+        cmd_mkdir(line + 5);
+    } else if (line[0] == 'c' && line[1] == 'd' && (line[2] == ' ' || line[2] == '\0')) {
+        cmd_cd(line + 2);
+    } else if (str_eq(line, "pwd")) {
+        cmd_pwd();
     } else if (str_eq(line, "history")) {
         cmd_history(); 
     } else if (str_eq(line, "set_max_task")) {

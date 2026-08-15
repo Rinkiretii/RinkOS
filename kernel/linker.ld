@@ -3,7 +3,7 @@ ENTRY(_start)
 SECTIONS
 {
     /* Must match KERNEL_OFFSET in boot.asm */
-    . = 0x1000;
+    . = 0x20000;
 
     .text : ALIGN(4)
     {

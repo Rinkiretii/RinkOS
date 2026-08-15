@@ -8,7 +8,19 @@
 BITS 16
 ORG 0x7C00
 
-KERNEL_OFFSET equ 0x1000      ; where we load the kernel in memory
+KERNEL_OFFSET equ 0x20000     ; linear address where the kernel is loaded and
+                               ; runs. Deliberately far above the boot sector
+                               ; (0x7C00) - loading straight at 0x1000 meant a
+                               ; kernel bigger than ~54 sectors would grow past
+                               ; 0x7C00 during the real-mode disk-load loop
+                               ; itself and overwrite the boot sector code
+                               ; while it was still running (self-modifying
+                               ; code, by accident). 0x20000 leaves ~448KB of
+                               ; headroom before the next fixed landmark (the
+                               ; 0x90000 stack set up in switch_to_pm).
+KERNEL_LOAD_SEGMENT equ 0x2000 ; ES value for the real-mode load: segment
+                               ; 0x2000 * 16 = 0x20000 linear, since BX alone
+                               ; (16-bit) can't reach past 0xFFFF.
 
 start:
     cli                       ; disable interrupts while we set things up
@@ -48,38 +60,94 @@ print_string:
     ret
 
 ; ------------------------------------------------------------
-; disk_load: loads DH sectors from drive DL into ES:BX
+; disk_load: loads DH sectors (starting at LBA 1, i.e. the sector
+; right after the boot sector) from drive DL into ES:BX.
+;
+; Uses INT 13h AH=0x42 (extended/LBA read), issued in 32-sector
+; chunks rather than one big request. Some BIOS/emulator combinations
+; misbehave (hang, no error) on a single large extended-read request
+; well under the documented ~127-sector packet limit - chunking
+; sidesteps whatever that limit actually is here, and also means we
+; don't have to reason about the transfer crossing a 64KB real-mode
+; segment boundary (handled per-chunk below).
 ; ------------------------------------------------------------
 disk_load:
-    push dx
+    pusha
 
-    mov ah, 0x02              ; BIOS read sectors function
-    mov al, dh                ; number of sectors to read
-    mov ch, 0x00               ; cylinder 0
-    mov dh, 0x00               ; head 0
-    mov cl, 0x02               ; start reading from sector 2 (sector 1 = boot sector)
+    movzx ecx, dh            ; ecx = total sectors left to read
+    mov eax, 1                ; current LBA (1 = right after the boot sector)
 
+.read_loop:
+    cmp ecx, 0
+    je .read_done
+
+    mov ebp, ecx              ; ebp = this chunk's sector count (NOT edx -
+    cmp ebp, 32                ; edx/dl must stay untouched, it holds the
+    jbe .chunk_size_ok         ; boot drive number that INT 13h needs on
+    mov ebp, 32                ; every call through this loop)
+.chunk_size_ok:
+    mov [dap_count], bp
+    mov [dap_lba_lo], eax
+    mov [dap_offset], bx
+    mov [dap_segment], es
+
+    mov si, dap
+    mov ah, 0x42            ; extended read (LBA)
     int 0x13
-    jc disk_error              ; carry flag set => error
+    jc disk_error
 
-    pop dx
-    cmp al, dh                 ; BIOS sets AL = sectors actually read
-    jne disk_error
+    add eax, ebp              ; advance to the next LBA
+
+    ; advance the ES:BX buffer pointer by (sectors_read * 512) bytes,
+    ; rolling the offset overflow into the segment as needed
+    push cx
+    mov cx, bp
+    shl cx, 9                ; cx = ebp * 512 (max 32*512 = 16384, fits in 16 bits)
+    add bx, cx
+    jnc .no_wrap
+    mov cx, es
+    add cx, 0x1000
+    mov es, cx
+.no_wrap:
+    pop cx
+
+    sub ecx, ebp
+    jmp .read_loop
+
+.read_done:
+    popa
     ret
+
+dap:                        ; Disk Address Packet for INT 13h AH=42h
+    db 0x10                 ; packet size
+    db 0x00                 ; reserved
+dap_count:    dw 0          ; number of sectors to read (this chunk)
+dap_offset:   dw 0          ; destination offset (this chunk)
+dap_segment:  dw 0          ; destination segment (this chunk)
+dap_lba_lo:   dd 0          ; starting LBA (this chunk)
+dap_lba_hi:   dd 0
 
 disk_error:
     mov si, MSG_DISK_ERROR
     call print_string
     jmp $
 
+
 load_kernel:
     mov si, MSG_LOAD_KERNEL
     call print_string
 
-    mov bx, KERNEL_OFFSET      ; ES:BX = where to load the kernel
-    mov dh, 48                 ; number of sectors to read (adjust to kernel size)
+    mov ax, KERNEL_LOAD_SEGMENT
+    mov es, ax
+    xor bx, bx                  ; ES:BX = KERNEL_LOAD_SEGMENT:0 = 0x20000 linear
+    mov dh, 150                 ; number of sectors to read (adjust to kernel
+                                 ; size; kept < 300 = FS_VOL_START_LBA in
+                                 ; kernel/scr/fs.h, with headroom to spare)
     mov dl, [BOOT_DRIVE]
     call disk_load
+
+    xor ax, ax
+    mov es, ax                   ; restore ES=0 for whatever runs next
     ret
 
 ; ------------------------------------------------------------

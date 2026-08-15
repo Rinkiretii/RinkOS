@@ -114,15 +114,17 @@ $(BUILD)/kernel.bin: \
 # ---- Combine bootloader + kernel into a single disk image ----
 $(BUILD)/rinkos.img: $(BUILD)/boot.bin $(BUILD)/kernel.bin
 	cat $(BUILD)/boot.bin $(BUILD)/kernel.bin > $@
-	# Pad up to a standard 1.44MB floppy image size (1474560 bytes).
-	# This matters for two reasons:
-	#  1. boot.asm reads sectors 2-16 unconditionally, so the image
-	#     must actually contain that many sectors or the BIOS read fails.
-	#  2. Booting a tiny raw image as a hard disk makes QEMU guess a
-	#     CHS geometry from the file size, which usually does NOT match
-	#     the fixed cylinder-0/head-0 assumptions in boot.asm. A full
-	#     floppy-sized image sidesteps that guesswork entirely.
-	truncate -s '>1474560' $@
+	# Pad up to an 8MB image.
+	# boot.asm now loads the kernel and addresses the filesystem purely
+	# via LBA (INT13h AH=0x42, extended read) rather than CHS, so we're
+	# no longer pinned to a floppy-sized image for geometry reasons.
+	# Quite the opposite, in fact: a 1.44MB image makes QEMU/SeaBIOS
+	# synthesize a floppy-like CHS geometry for the emulated IDE disk,
+	# and extended reads that cross those synthetic cylinder boundaries
+	# were observed to fail/hang. An 8MB image gets a normal hard-disk
+	# geometry and has plenty of room for FS_VOL_START_LBA in
+	# kernel/scr/fs.h to grow further later too.
+	truncate -s '>8388608' $@
 
 # ---- Run in QEMU ----
 # Boot as a floppy (-fda), not a hard disk (-drive format=raw). Floppy

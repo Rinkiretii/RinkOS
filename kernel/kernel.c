@@ -42,8 +42,21 @@ extern void shell_run();
 extern void timer_init();
 extern void tasks_init();
 extern void fs_init();
+extern void kmalloc_stats(size_t *total, size_t *used, size_t *free_bytes);
+extern void fs_debug_stats(uint32_t *root_entries_used, uint32_t *free_clusters, uint32_t *total_clusters);
+extern void kprint_uint(uint32_t val);
+void kprint(const char *str); /* defined below; boot_step() needs it earlier */
 
-char *system_version = "RinkOS 0.03";
+/* Boot log helper: "[boot] <label> ... OK\n" style status line, kept
+ * to one place so every stage prints the same way. */
+static void boot_step(const char *label)
+{
+    kprint("[boot] ");
+    kprint(label);
+    kprint("\n");
+}
+
+char *system_version = "RinkOS 0.031";
 
 void vga_update_cursor(void)
 {
@@ -164,6 +177,16 @@ void kprint_hex32(uint32_t val)
     kprint(buf);
 }
 
+void welcome_text(void) {
+    kprint("RinkOS kernel loaded successfully.\n");
+    kprint("Welcome to RinkOS!\n");
+    kprint("--------------------------------\n");
+    kprint("Kernel is running in 32-bit protected mode.\n");
+    kprint("\n");
+    kprint(system_version);
+    kprint("\n");
+}
+
 void shell_task(void) {
     asm volatile("sti");
     shell_run();
@@ -173,7 +196,8 @@ void kernel(void) {
     asm volatile("sti");
 
     task_create_named(shell_task, "shell");
-    fs_init();
+
+    fs_init(); /* fs_init() itself logs whether it formatted or mounted */
 
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
     
@@ -190,21 +214,12 @@ void kernel(void) {
 void kernel_main(void)
 {
     vga_clear();
-    kmalloc_init(); 
-
-    kprint("RinkOS kernel loaded successfully.\n");
-    kprint("Welcome to RinkOS!\n");
-    kprint("--------------------------------\n");
-    kprint("Kernel is running in 32-bit protected mode.\n");
-    kprint("\n");
-    kprint(system_version);
-    kprint("\n");
-
+    kmalloc_init();
     idt_init();
     pic_remap();
     tasks_init();
     task_create_named(kernel, "kernel");
-
+    welcome_text();
     while (inb(0x64) & 0x01) { inb(0x60); }  /* wait for keyboard controller to be ready */
     
     asm volatile("sti");  /* enable interrupts */
