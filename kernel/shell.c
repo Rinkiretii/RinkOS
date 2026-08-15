@@ -18,6 +18,7 @@ extern uint32_t timer_get_seconds(void);
 extern char *system_version;
 extern uint32_t counter;
 extern void kprint_uint();
+extern void fs_debug_stats(uint32_t *root_entries_used, uint32_t *free_clusters, uint32_t *total_clusters);
 
 #define LINE_BUF_SIZE 258
 #define HISTORY_SIZE 16
@@ -53,6 +54,39 @@ static void cmd_pwd(void)
     char cwd[FS_NAME_LEN];
     fs_getcwd(cwd, sizeof(cwd));
     kprint(cwd);
+    kprint("\n");
+}
+
+static void cmd_rmdir(const char *args)
+{
+    if (*args == ' ') args++;
+    if (*args == '\0') {
+        kprint("usage: rmdir <path>\n");
+        return;
+    }
+
+    int result = fs_rmdir(args);
+    if (result < 0) {
+        kprint("rmdir failed (not a directory, not empty, or in use)\n");
+    } else {
+        kprint("Removed directory ");
+        kprint(args);
+        kprint("\n");
+    }
+}
+
+static void cmd_df(void)
+{
+    uint32_t root_used, free_clusters, total_clusters;
+    fs_debug_stats(&root_used, &free_clusters, &total_clusters);
+
+    kprint("Root entries used: ");
+    kprint_uint(root_used);
+    kprint(" / 128\n");
+    kprint("Free space: ");
+    kprint_uint(free_clusters / 2);   /* 2 clusters/KB at 512 bytes each */
+    kprint(" KB free of ");
+    kprint_uint(total_clusters / 2);
     kprint("\n");
 }
 
@@ -313,8 +347,10 @@ static void cmd_help(void)
     kprint(" mv <old> <new>   - rename a file\n");
     kprint(" append <f> <txt> - append text to a file\n");
     kprint(" mkdir <path>     - create a directory\n");
+    kprint(" rmdir <path>     - remove an empty directory\n");
     kprint(" cd <path>        - change directory (.. goes up, / is root)\n");
     kprint(" pwd              - show current directory\n");
+    kprint(" df                - show free disk space\n");
     kprint(" top              - show running tasks\n");
 }
 
@@ -439,6 +475,11 @@ static void run_command(char *line)
     } else if (line[0] == 'm' && line[1] == 'k' && line[2] == 'd' && line[3] == 'i' &&
                line[4] == 'r' && (line[5] == ' ' || line[5] == '\0')) {
         cmd_mkdir(line + 5);
+    } else if (line[0] == 'r' && line[1] == 'm' && line[2] == 'd' && line[3] == 'i' &&
+               line[4] == 'r' && (line[5] == ' ' || line[5] == '\0')) {
+        cmd_rmdir(line + 5);
+    } else if (str_eq(line, "df")) {
+        cmd_df();
     } else if (line[0] == 'c' && line[1] == 'd' && (line[2] == ' ' || line[2] == '\0')) {
         cmd_cd(line + 2);
     } else if (str_eq(line, "pwd")) {

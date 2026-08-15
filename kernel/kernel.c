@@ -47,8 +47,6 @@ extern void fs_debug_stats(uint32_t *root_entries_used, uint32_t *free_clusters,
 extern void kprint_uint(uint32_t val);
 void kprint(const char *str); /* defined below; boot_step() needs it earlier */
 
-/* Boot log helper: "[boot] <label> ... OK\n" style status line, kept
- * to one place so every stage prints the same way. */
 static void boot_step(const char *label)
 {
     kprint("[boot] ");
@@ -56,7 +54,7 @@ static void boot_step(const char *label)
     kprint("\n");
 }
 
-char *system_version = "RinkOS 0.031";
+char *system_version = "RinkOS 0.032";
 
 void vga_update_cursor(void)
 {

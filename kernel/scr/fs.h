@@ -116,6 +116,7 @@ void fs_list(void);
 
 /* Directory navigation. */
 int fs_mkdir(const char *path);
+int fs_rmdir(const char *path);
 int fs_chdir(const char *path);
 void fs_getcwd(char *buf, uint32_t max_len);
 

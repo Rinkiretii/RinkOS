@@ -522,10 +522,10 @@ void fs_init(void)
         }
         root_save();
 
-//        kprint("[fs] no RinkFS16 volume found - formatted a fresh one\n");
+        kprint("[fs] no RinkFS16 volume found - formatted a fresh one\n");
     } else {
         root_load();
-//        kprint("[fs] RinkFS16 volume found - mounted\n");
+        kprint("[fs] RinkFS16 volume found - mounted\n");
     }
 
     cwd_is_root = 1;
@@ -892,6 +892,52 @@ int fs_mkdir(const char *path)
     new_entry.file_size = 0;
     dir_write_entry(&free_loc, &new_entry);
 
+    return 0;
+}
+
+int fs_rmdir(const char *path)
+{
+    dir_ref_t parent;
+    char leaf[FS_COMPONENT_LEN];
+    if (resolve_parent(path, &parent, leaf) < 0) return -1;
+    if (leaf[0] == '\0') return -1;
+    if (str_eq_local(leaf, ".") || str_eq_local(leaf, "..")) return -1;
+
+    uint8_t n[FS_NAME_FIELD_LEN], e[FS_EXT_FIELD_LEN];
+    split_name(leaf, n, e);
+
+    fs_dirent_t d;
+    entry_loc_t loc;
+    if (!dir_scan(parent, n, e, &d, &loc)) return -1;
+    if (!(d.attr & FS_ATTR_DIRECTORY)) return -1; /* use delete for files */
+
+    dir_ref_t target;
+    target.is_root = 0;
+    target.cluster = d.first_cluster;
+
+    /* refuse to remove the directory we're currently sitting in */
+    dir_ref_t cur = cwd_dir();
+    if (!cur.is_root && cur.cluster == target.cluster) return -1;
+
+    /* must be empty - only "." and ".." allowed inside */
+    dir_iter_t it;
+    dir_iter_start(target, &it);
+    fs_dirent_t e2;
+    entry_loc_t l2;
+    while (dir_iter_next(&it, &e2, &l2)) {
+        uint8_t first = e2.name[0];
+        if (first == FS_DIRENT_FREE || first == FS_DIRENT_DELETED) continue;
+        if (fields_eq(e2.name, DOT_NAME, FS_NAME_FIELD_LEN)) continue;
+        if (fields_eq(e2.name, DOTDOT_NAME, FS_NAME_FIELD_LEN)) continue;
+        return -1; /* not empty */
+    }
+
+    fat_free_chain(d.first_cluster);
+
+    d.name[0] = FS_DIRENT_DELETED;
+    d.first_cluster = 0;
+    d.file_size = 0;
+    dir_write_entry(&loc, &d);
     return 0;
 }
 
