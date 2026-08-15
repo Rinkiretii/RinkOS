@@ -522,10 +522,10 @@ void fs_init(void)
         }
         root_save();
 
-        kprint("[fs] no RinkFS16 volume found - formatted a fresh one\n");
+//        kprint("[fs] no RinkFS16 volume found - formatted a fresh one\n");
     } else {
         root_load();
-        kprint("[fs] RinkFS16 volume found - mounted\n");
+//        kprint("[fs] RinkFS16 volume found - mounted\n");
     }
 
     cwd_is_root = 1;

@@ -35,10 +35,6 @@ static int str_eq(const char *a, const char *b)
     return *a == *b;
 }
 
-static void error_command_no_work_C(void) {
-    kprint(" 001 this command in develop, sorry.");
-}
-
 static void cmd_ls(void)
 {
     char cwd[FS_NAME_LEN];
@@ -336,21 +332,8 @@ static void cmd_help(void)
     kprint(" meminfo          - show heap usage\n");
     kprint(" reboot           - restart\n");
 //    kprint(" shutdown         - power off\n");
-//    kprint(" set_max_task     - set max task");
     kprint(" uptime           - show system uptime in seconds\n");
     kprint(" history          - show recent commands\n");
-    kprint(" ls               - list files\n");
-    kprint(" write <f> <txt>  - write text to a file\n");
-    kprint(" cat <f>          - print a file's contents\n");
-    kprint(" delete <f>       - delete a file\n");
-    kprint(" stat <f>         - show file size\n");
-    kprint(" mv <old> <new>   - rename a file\n");
-    kprint(" append <f> <txt> - append text to a file\n");
-    kprint(" mkdir <path>     - create a directory\n");
-    kprint(" rmdir <path>     - remove an empty directory\n");
-    kprint(" cd <path>        - change directory (.. goes up, / is root)\n");
-    kprint(" pwd              - show current directory\n");
-    kprint(" df                - show free disk space\n");
     kprint(" top              - show running tasks\n");
 }
 
@@ -486,10 +469,6 @@ static void run_command(char *line)
         cmd_pwd();
     } else if (str_eq(line, "history")) {
         cmd_history(); 
-    } else if (str_eq(line, "set_max_task")) {
-        kprint("Error");
-        error_command_no_work_C();
-        kprint("\n");
     } else {
         kprint("Unknown command: ");
         kprint(line);
