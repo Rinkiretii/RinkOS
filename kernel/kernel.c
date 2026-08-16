@@ -54,7 +54,7 @@ static void boot_step(const char *label)
     kprint("\n");
 }
 
-char *system_version = "RinkOS 0.033";
+char *system_version = "RinkOS 0.034";
 
 void vga_update_cursor(void)
 {

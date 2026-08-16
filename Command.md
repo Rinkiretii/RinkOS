@@ -7,7 +7,6 @@
  - reboot   - restart
  - shutdown - power off (command not work)
  - history  - show recent commands
- - top      - show running procces
 
 # System command
   
@@ -29,3 +28,9 @@
  - cd <path>        - change directory
  - pwd              - show current directory
  - df               - show free disk space
+
+# Procces command
+
+  - top        - show running procces
+  - kill <id>  - kill procces
+  - spawn      - spawn empity procces (debug)

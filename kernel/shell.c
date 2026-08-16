@@ -83,7 +83,6 @@ static void cmd_df(void)
     kprint_uint(free_clusters / 2);   /* 2 clusters/KB at 512 bytes each */
     kprint(" KB free of ");
     kprint_uint(total_clusters / 2);
-    kprint("\n");
 }
 
 static void cmd_mkdir(const char *args)
@@ -322,6 +321,89 @@ static void cmd_top(void)
     task_list();
 }
 
+/* Background demo task for spawn/kill: prints a heartbeat once a
+ * second and otherwise sits idle. Doesn't know its own name or id
+ * (task entry points take no arguments in this scheduler) - `top`
+ * is how you tell spawned tasks apart. */
+static void counter_task(void)
+{
+    asm volatile("sti"); /* every task's first run enters directly via a
+                            plain ret (see task_switch), bypassing iretd -
+                            so interrupts stay disabled until the task
+                            re-enables them itself. Skipping this means
+                            the first hlt below hangs forever: no timer
+                            interrupt can ever fire to wake it back up. */
+    uint32_t last_beat = 0xFFFFFFFF;
+    for (;;) {
+        uint32_t now = timer_get_seconds();
+        if (last_beat == 0xFFFFFFFF) last_beat = now;
+        if (now - last_beat >= 5) {
+            last_beat = now;
+//            kprint("[task] heartbeat\n");
+        }
+        asm volatile("hlt");
+    }
+}
+
+static int spawn_count = 0;
+
+static void cmd_spawn(void)
+{
+    spawn_count++;
+
+    char name[16];
+    int i = 0;
+    name[i++] = 't'; name[i++] = 'a'; name[i++] = 's'; name[i++] = 'k';
+
+    char digits[8];
+    int di = 0;
+    int n = spawn_count;
+    if (n == 0) digits[di++] = '0';
+    while (n > 0) { digits[di++] = (char)('0' + (n % 10)); n /= 10; }
+    while (di > 0 && i < 15) name[i++] = digits[--di];
+    name[i] = '\0';
+
+    int id = task_create_named(counter_task, name);
+    if (id < 0) {
+        kprint("spawn failed: too many tasks (see 'top')\n");
+    } else {
+        kprint("Spawned task '");
+        kprint(name);
+        kprint("' (id ");
+        kprint_uint((uint32_t)id);
+        kprint(") - see 'top'\n");
+    }
+}
+
+static void cmd_kill(const char *args)
+{
+    if (*args == ' ') args++;
+    if (*args == '\0') {
+        kprint("usage: kill <id>  (see 'top' for ids)\n");
+        return;
+    }
+
+    int id = 0;
+    int i = 0;
+    while (args[i] >= '0' && args[i] <= '9') {
+        id = id * 10 + (args[i] - '0');
+        i++;
+    }
+    if (i == 0) {
+        kprint("usage: kill <id>  (see 'top' for ids)\n");
+        return;
+    }
+
+    int result = task_kill(id);
+    if (result < 0) {
+        kprint("kill failed\n");
+    } else {
+        kprint("Killed task ");
+        kprint_uint((uint32_t)id);
+        kprint("\n");
+    }
+}
+
 static void cmd_help(void)
 {
     kprint("Available commands:\n");
@@ -335,6 +417,8 @@ static void cmd_help(void)
     kprint(" uptime           - show system uptime in seconds\n");
     kprint(" history          - show recent commands\n");
     kprint(" top              - show running tasks\n");
+//    kprint(" spawn            - start a demo background task\n");
+    kprint(" kill <id>        - stop a task (see 'top' for ids)\n");
 }
 
 static void cmd_echo(const char *args)
@@ -450,6 +534,11 @@ static void run_command(char *line)
         cmd_append(line + 6);  
     } else if (str_eq(line, "top")) {
         cmd_top();
+    } else if (str_eq(line, "spawn")) {
+        cmd_spawn();
+    } else if (line[0] == 'k' && line[1] == 'i' && line[2] == 'l' && line[3] == 'l' &&
+               (line[4] == ' ' || line[4] == '\0')) {
+        cmd_kill(line + 4);
     } else if (line[0] == 's' && line[1] == 't' && line[2] == 'a' && line[3] == 't' &&
                (line[4] == ' ' || line[4] == '\0')) {
         cmd_stat(line + 4);

@@ -55,9 +55,9 @@ static void name_copy(char *dst, const char *src, int max_len)
     dst[i] = '\0';
 }
 
-void task_create_named(void (*entry)(void), const char *name)
+int task_create_named(void (*entry)(void), const char *name)
 {
-    if (task_count >= MAX_TASKS) return;
+    if (task_count >= MAX_TASKS) return -1;
 
     uint8_t *stack = (uint8_t *)kmalloc(TASK_STACK_SIZE);
     uint32_t *sp = (uint32_t *)(stack + TASK_STACK_SIZE);
@@ -71,7 +71,9 @@ void task_create_named(void (*entry)(void), const char *name)
     int slot = task_count++;
     tasks[slot].esp = (uint32_t)sp;
     tasks[slot].used = 1;
+    tasks[slot].stack_base = stack;
     name_copy(tasks[slot].name, name, 16);
+    return slot;
 }
 
 
@@ -82,14 +84,34 @@ void task_create(void (*entry)(void))
 }
 
 extern void kprint(const char *);
+extern void kprint_uint(uint32_t);
 
 void task_list(void)
 {
     for (int i = 0; i < task_count; i++) {
         if (!tasks[i].used) continue;
-        kprint("  ");
+        kprint("  [");
+        kprint_uint((uint32_t)i);
+        kprint("] ");
         kprint(tasks[i].name);
         if (i == current_task) kprint(" - running");
         kprint("\n");
     }
+}
+
+int task_kill(int id)
+{
+    if (id < 0 || id >= task_count) return -1;
+    if (!tasks[id].used) return -1;
+    if (id == current_task) return -1; /* can't tear down our own running stack */
+    if (id == 0) return -1; /* kernel */
+
+    kfree(tasks[id].stack_base);
+    tasks[id].used = 0;
+    return 0;
+}
+
+int task_current_id(void)
+{
+    return current_task;
 }
